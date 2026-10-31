@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#151a22">
+<title>동전 차트 감별소</title>
+<meta name="description" content="오르는 그래프의 정체는 동전 던지기? — 시계열의 추세·계절·잔차와 분해, 이동 평균과 지수 평활, 정상성과 랜덤 워크, 차분과 로그, 자기상관, 잔차로 찾는 이상 징후를 손으로 체험하는 앱">
+<style>
+:root{--bg:#151a22;--card:#1c232e;--card2:#25303d;--fg:#eff3f8;--mut:#a3b0c2;--line:#33425a;
+--a:#7cc4ff;--b:#ff9b5c;--ok:#6fdc9a;--bad:#ff7d7d;--gold:#ffd166;--pur:#b79cff}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--fg);font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;line-height:1.55}
+[hidden]{display:none!important}
+.wrap{max-width:560px;margin:0 auto;padding:12px 14px 40px}
+h1{font-size:1.2rem;margin:6px 0}
+h1 small{display:block;font-size:.76rem;color:var(--mut);font-weight:400}
+.tabs{display:flex;gap:5px;margin:10px 0}
+.tabs button{flex:1;padding:9px 2px;border:1px solid var(--line);background:var(--card);color:var(--mut);border-radius:10px;font-size:.82rem;font-weight:600}
+.tabs button.on{background:#24406e;color:#fff;border-color:var(--a)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+h2{font-size:1rem;margin:2px 0 8px}
+.note{font-size:.86rem;color:var(--mut);margin:8px 0 0}
+.note b{color:var(--fg)}
+.btn{padding:11px 14px;border-radius:12px;border:0;background:linear-gradient(135deg,#2f6fd0,#7cc4ff);color:#fff;font-weight:800;font-size:.95rem;flex:1}
+.btn.sec{background:var(--card2);border:1px solid var(--line);color:var(--fg);font-weight:700}
+.btn.sm{flex:none;padding:7px 11px;font-size:.82rem}
+.btn:disabled{opacity:.4}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.row+.row{margin-top:8px}
+.pill{padding:7px 11px;border-radius:999px;border:1px solid var(--line);background:var(--card2);color:var(--fg);font-size:.84rem}
+.pill.on{border-color:var(--gold);background:#4a3e1a;color:#fff}
+.lbl{font-size:.8rem;color:var(--mut)}
+canvas{display:block;width:100%;border-radius:12px;background:#10141b;margin-top:8px}
+.say{background:#16304c;border-left:3px solid var(--a);border-radius:8px;padding:9px 11px;font-size:.92rem;margin-top:10px}
+.say b{color:#fff}
+.say.q{border-left-color:var(--b);background:#2e2118}
+.res{margin-top:10px;font-size:.92rem;border-radius:10px;padding:10px 12px}
+.res.g{background:#16352a;border:1px solid #2f7a52}
+.res.r{background:#3a1d1d;border:1px solid #8a3a3a}
+.res.y{background:#3a3218;border:1px solid #8a7a3a}
+.code{background:#0f131a;border:1px solid #26324a;border-radius:10px;padding:9px 11px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;line-height:1.65;white-space:pre;overflow-x:auto;margin-top:8px}
+.code .k{color:#ff9bd2}.code .s{color:#a5e38a}.code .c{color:#6b7a90}.code .n{color:#ffd166}.code .f{color:#7cc4ff}
+.out{background:#0b0e13;border-radius:10px;padding:8px 11px;margin-top:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.8rem;white-space:pre-wrap;word-break:break-all}
+.out .p{color:#6b7a90}.out .o{color:#6fdc9a}.out .w{color:#ffd166}.out .e{color:#ff7d7d}
+.opts{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.opts button{text-align:left;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card2);color:var(--fg);font-size:.92rem}
+.opts button.right{border-color:#6fdc9a;background:#16352a}
+.opts button.wrong{border-color:#ff7d7d;background:#3a1d1d}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.stats div{background:var(--card2);border-radius:10px;padding:7px 6px;text-align:center;font-size:.74rem;color:var(--mut)}
+.stats div b{display:block;font-size:1.02rem;color:var(--fg);font-variant-numeric:tabular-nums}
+.sl{display:grid;grid-template-columns:84px 1fr 54px;gap:8px;align-items:center;font-size:.84rem;margin-top:6px}
+.sl b{text-align:right;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%}
+input[type=text]{flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:#10141b;color:var(--fg);font-size:.92rem}
+.sum3{margin-top:12px;background:linear-gradient(135deg,#1d3358,#3a2a5a);border-radius:14px;padding:12px 14px}
+.sum3 ol{margin:4px 0;padding-left:20px;font-size:.92rem}
+.mine{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.mine div{display:flex;justify-content:space-between;gap:8px;background:var(--card2);border-radius:10px;padding:8px 10px;font-size:.88rem}
+.mine button{border:0;background:none;color:var(--mut);font-size:.9rem}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 16px;border-radius:999px;font-size:.9rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.on{opacity:1}
+footer{text-align:center;color:var(--mut);font-size:.78rem;margin-top:18px}
+footer a{color:var(--mut)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🪙 동전 차트 감별소<small>오르는 그래프의 정체는? — 시계열 읽기</small></h1>
+<div class="tabs">
+  <button class="on" data-tab="t1">① 성분</button>
+  <button data-tab="t2">② 평활</button>
+  <button data-tab="t3">③ 정상성</button>
+  <button data-tab="t4">④ 이상 징후</button>
+</div>
+
+<!-- ① -->
+<section id="tab-t1">
+  <div class="card">
+    <h2>📈 사건 접수: 잘나가는 차트?</h2>
+    <canvas id="opCv"></canvas>
+    <div class="row" style="margin-top:8px"><button class="btn" id="opReveal">🔍 정체 밝히기</button><button class="btn sec sm" id="opRe">🪙 다시 던지기</button><button class="btn sec sm" id="opOrig">원래 그래프</button></div>
+    <div class="stats"><div>앞면 (+1)<b id="opH">-</b></div><div>뒷면 (−1)<b id="opT">-</b></div><div>끝값 · 최소 · 최대<b id="opE">-</b></div></div>
+    <div id="opMsg"><div class="say q">200일 동안 출렁이며 0 근처에서 30까지. <b>다음 달에도 오를 것 같은데, 사 볼까요?</b> 비밀은 <b>③ 정상성</b>에서!</div></div>
+  </div>
+
+  <div class="card">
+    <h2>🎲 동전 12번 실험</h2>
+    <p class="note" style="margin-top:0">오르는 힘이 전혀 없는 동전 던지기 200번을 12번 반복합니다. 그럴듯한 "추세"가 몇 개나 보이나요?</p>
+    <canvas id="glCv"></canvas>
+    <div class="row" style="margin-top:8px"><button class="btn sec sm" id="glGo">🎲 12번 다시</button></div>
+  </div>
+
+  <div class="card">
+    <h2>🧶 시계열을 이루는 성분과 분해</h2>
+    <p class="note" style="margin-top:0">손잡이로 시계열을 직접 조립해 보세요. 아래 세 줄이 성분, 맨 위가 합친 관측값입니다.</p>
+    <div class="row"><button class="pill on" data-md="add">덧셈 모형</button><button class="pill" data-md="mul">곱셈 모형</button></div>
+    <div class="sl"><span>추세 기울기</span><input type="range" id="bdT" min="-1" max="3" step="0.1" value="1"><b id="bdTv">1</b></div>
+    <div class="sl"><span>계절 크기</span><input type="range" id="bdS" min="0" max="40" step="1" value="20"><b id="bdSv">20</b></div>
+    <div class="sl"><span>주기(일)</span><input type="range" id="bdP" min="4" max="30" step="1" value="7"><b id="bdPv">7</b></div>
+    <div class="sl"><span>잡음</span><input type="range" id="bdN" min="0" max="20" step="1" value="5"><b id="bdNv">5</b></div>
+    <canvas id="bdCv"></canvas>
+    <div id="bdMsg"></div>
+  </div>
+</section>
+
+<!-- ② -->
+<section id="tab-t2" hidden>
+  <div class="card">
+    <h2>🪟 들쭉날쭉을 다듬는 이동 평균</h2>
+    <p class="note" style="margin-top:0">가상의 방문자 56일(요일 효과 있음). 창의 길이를 바꿔 보세요.</p>
+    <div class="sl"><span>창 길이</span><input type="range" id="maW" min="1" max="21" value="3"><b id="maWv">3</b></div>
+    <canvas id="maCv"></canvas>
+    <div id="maMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>❓ 퀴즈 ①</h2>
+    <div class="say q">넉 달 판매량이 <b>12, 18, 30, 24</b>. 마지막 달의 <b>3개월 이동 평균</b>은?</div>
+    <div class="opts" id="qz1"><button data-a="21">21</button><button data-a="24">24</button><button data-a="30">30</button></div>
+    <div id="qz1Msg"></div>
+  </div>
+
+  <div class="card">
+    <h2>🎚️ 최근에 더 무게를: 지수 평활</h2>
+    <p class="note" style="margin-top:0">새 평활값 = <b>α × 오늘 값 + (1 − α) × 어제 평활값</b>. 10일째에 매출이 갑자기 한 단계 오른 가상 데이터입니다.</p>
+    <div class="sl"><span>α (알파)</span><input type="range" id="esA" min="0.05" max="0.95" step="0.05" value="0.5"><b id="esAv">0.5</b></div>
+    <canvas id="esCv"></canvas>
+    <canvas id="ewCv"></canvas>
+    <div id="esMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>❓ 퀴즈 ②</h2>
+    <div class="say q">어제 평활값 <b>100</b>, 오늘 판매량 <b>120</b>, <b>α = 0.3</b>. 오늘 평활값은?</div>
+    <div class="opts" id="qz2"><button data-a="106">106</button><button data-a="110">110</button><button data-a="114">114</button></div>
+    <div id="qz2Msg"></div>
+  </div>
+</section>
+
+<!-- ③ -->
+<section id="tab-t3" hidden>
+  <div class="card">
+    <h2>🪙 첫 장면의 비밀: 동전의 걸음</h2>
+    <div class="row"><button class="pill on" data-dv="lvl">누적 (그래프 그대로)</button><button class="pill" data-dv="diff">하루 차이 (오늘 − 어제)</button></div>
+    <canvas id="rwCv"></canvas>
+    <div class="stats"><div>앞 100일 평균<b id="rwM1">-</b></div><div>뒤 100일 평균<b id="rwM2">-</b></div><div>ADF p 값 (원고)<b id="rwP">-</b></div></div>
+    <div id="rwMsg"></div>
+    <p class="note">ADF p 값은 원고의 statsmodels adfuller 기본값 결과(누적 0.897, 차분 2.0 × 10⁻²⁹)입니다. "다시 던지기"로 만든 새 그래프에는 이 앱이 계산한 간이 DF 통계량을 보여 줍니다(랜덤 워크라도 약 5%는 우연히 '정상'으로 판정될 수 있습니다).</p>
+    <div class="row" style="margin-top:6px"><button class="btn sec sm" id="rwRe">🪙 새로 던져 검정</button><button class="btn sec sm" id="rwOrig">원래 그래프</button></div>
+    <div class="out" id="rwDf"></div>
+  </div>
+
+  <div class="card">
+    <h2>📐 정상성: 판 자체가 그대로인가</h2>
+    <p class="note" style="margin-top:0">평균과 분산이 시간이 흘러도 변하지 않아야 과거에서 배운 규칙이 미래에도 통합니다. 손질 방법을 골라 보세요.</p>
+    <div class="row"><button class="pill on" data-tf="raw">원래 값</button><button class="pill" data-tf="log">로그</button><button class="pill" data-tf="diff">차분</button><button class="pill" data-tf="logdiff">로그 → 차분</button><button class="pill" data-tf="sdiff">계절 차분(12)</button></div>
+    <canvas id="tfCv"></canvas>
+    <div id="tfMsg"></div>
+    <p class="note">데이터: 출렁임이 점점 커지는 가상의 월별 매출 72개월(앱이 생성).</p>
+  </div>
+</section>
+
+<!-- ④ -->
+<section id="tab-t4" hidden>
+  <div class="card">
+    <h2>🔁 어제와 지난주를 닮는 정도, 자기상관</h2>
+    <canvas id="acCv"></canvas>
+    <div id="acMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>🚨 잔차로 찾는 이상 징후</h2>
+    <p class="note" style="margin-top:0">seasonal_decompose(period=7, additive) 결과. 점을 눌러 날짜와 잔차를 확인하세요.</p>
+    <div class="row"><button class="pill on" data-dp="all">관측·추세·계절·잔차</button><button class="pill" data-dp="res">잔차와 3σ 경계</button></div>
+    <canvas id="dpCv"></canvas>
+    <div class="sl"><span>경계 ×σ</span><input type="range" id="dpK" min="1.5" max="4" step="0.5" value="3"><b id="dpKv">3</b></div>
+    <div class="out" id="dpOut"></div>
+    <div id="dpMsg"></div>
+  </div>
+
+  <div class="card">
+    <h2>🐼 판다스로 한 번에</h2>
+    <div class="code"><span class="k">import</span> numpy <span class="k">as</span> np, pandas <span class="k">as</span> pd
+<span class="k">from</span> statsmodels.tsa.seasonal <span class="k">import</span> seasonal_decompose
+<span class="k">from</span> statsmodels.tsa.stattools <span class="k">import</span> adfuller
+
+s.rolling(<span class="n">3</span>).mean()                 <span class="c"># 이동 평균</span>
+s.ewm(alpha=<span class="n">0.3</span>, adjust=<span class="k">False</span>).mean()  <span class="c"># 지수 평활</span>
+s.diff()                              <span class="c"># 차분 (계절 차분: s.diff(12))</span>
+d = seasonal_decompose(s, period=<span class="n">7</span>, model=<span class="s">"additive"</span>)
+d.trend, d.seasonal, d.resid          <span class="c"># 추세 · 계절 · 잔차</span>
+adfuller(s)[<span class="n">1</span>]                        <span class="c"># ADF 검정 p 값</span>
+
+walk = np.random.default_rng(<span class="n">28</span>).choice([-<span class="n">1</span>, <span class="n">1</span>], <span class="n">200</span>).cumsum()  <span class="c"># 동전 그래프</span></div>
+  </div>
+
+  <div class="card">
+    <h2>📌 세 줄 정리</h2>
+    <div class="sum3"><ol>
+      <li>시계열은 <b>추세·계절·순환·잔차</b>로 나뉘고, 폭이 커지면 <b>곱셈 모형이나 로그</b>를 쓴다.</li>
+      <li><b>이동 평균</b>은 창 안을 고르게, <b>지수 평활</b>은 최근에 무게를 두어 잡음을 걷는다.</li>
+      <li>예측 전에 <b>정상성</b>을 확인하고 <b>차분</b>하며, 튀는 <b>잔차</b>로 이상 징후를 찾는다.</li>
+    </ol></div>
+  </div>
+
+  <div class="card">
+    <h2>🤔 생각해 볼 질문</h2>
+    <p class="note" style="margin-top:0">최근에 본 <b>"계속 오르고 있다"</b>는 그래프 하나를 떠올려 보세요. 진짜 추세일까요, 걸음이 쌓인 우연일까요? 하루 차이를 빼서 다시 보면? (이 기기에만 저장)</p>
+    <div class="row" style="margin-top:8px"><input type="text" id="myIn" maxlength="60" placeholder="예: ○○ 회원 수 그래프 — 차분하면?"><button class="btn sm" id="myAdd">추가</button></div>
+    <div class="mine" id="mine"></div>
+  </div>
+</section>
+
+<footer>© 2026 정필 수심명 · <a href="https://blog.naver.com/omyman" target="_blank" rel="noopener">blog.naver.com/omyman</a><br>빅데이터 09 부록 · 인터넷 없이 동작</footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+(()=>{
+'use strict';
+const D={"y":[185.01,202.49,200.63,198.55,216.73,240.04,256.3,198.7,205.54,205.9,212.45,227.78,252.53,258.35,198.85,218.48,209.28,214.71,223.49,252.55,260.79,204.82,215.66,224.36,224.78,239.07,253.42,274.31,212.76,229.57,222.35,228.61,242.11,268.96,289.3,215.96,235.84,241.42,190.08,253.44,280.55,291.32,220.87,243.38,250.79,237.26,265.3,287.6,294.79,244.0,253.81,245.0,252.37,270.88,293.06,308.41],"trend":[null,null,null,214.249,216.206,216.641,217.393,219.379,220.959,222.743,223.035,223.057,224.905,225.388,225.711,225.099,225.102,225.451,226.304,225.902,228.056,229.495,231.719,231.843,233.774,234.907,236.893,236.606,237.153,237.588,239.808,241.95,242.408,243.304,246.029,240.524,242.144,243.8,244.088,244.79,245.867,247.206,253.947,255.64,256.647,257.143,260.447,261.937,261.11,263.268,264.066,264.846,266.792,null,null,null],"seas":[-24.787,-10.706,-12.242,-18.458,2.828,25.741,37.624,-24.787,-10.706,-12.242,-18.458,2.828,25.741,37.624,-24.787,-10.706,-12.242,-18.458,2.828,25.741,37.624,-24.787,-10.706,-12.242,-18.458,2.828,25.741,37.624,-24.787,-10.706,-12.242,-18.458,2.828,25.741,37.624,-24.787,-10.706,-12.242,-18.458,2.828,25.741,37.624,-24.787,-10.706,-12.242,-18.458,2.828,25.741,37.624,-24.787,-10.706,-12.242,-18.458,2.828,25.741,37.624],"resid":[null,null,null,2.756,-2.307,-2.34,1.283,4.108,-4.714,-4.604,7.872,1.9,1.881,-4.665,-2.071,4.084,-3.582,7.719,-5.638,0.909,-4.889,0.116,-5.35,4.755,9.468,1.331,-9.218,0.076,0.391,2.685,-5.217,5.119,-3.128,-0.089,5.652,0.225,4.4,9.863,-35.548,5.824,8.944,6.488,-8.285,-1.553,6.389,-1.42,2.023,-0.081,-3.941,5.521,0.452,-7.601,4.039,null,null,null],"acf":[1.0,0.47,0.172,0.077,0.046,0.095,0.328,0.739,0.325,0.059,-0.024,-0.065,-0.016,0.192,0.55],"coin":"11011110001001010111001111000110101111101010100100010010011101111010100011010101101111011001111110010101011111010110101001110111010110100100011010111111010100111001100000010110011101011011011010011110","sd":7.036};
+const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('on'),1800);}
+let touched=false;document.addEventListener('pointerdown',()=>{touched=true;},{once:true,capture:true});
+const vib=n=>{if(!touched)return;try{navigator.vibrate&&navigator.vibrate(n);}catch(e){}};
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function prep(cv,ratio){const dpr=Math.min(2,window.devicePixelRatio||1),w=cv.clientWidth||320,h=Math.round(w*ratio);
+  cv.width=w*dpr;cv.height=h*dpr;cv.style.height=h+'px';const c=cv.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);return{c,w,h};}
+function T(c,s,x,y,col,size,al,bl,wt){c.fillStyle=col;c.font=`${wt||''} ${size||12}px -apple-system,"Malgun Gothic",sans-serif`;c.textAlign=al||'center';c.textBaseline=bl||'middle';c.fillText(s,x,y);}
+function single(sel,attr,fn){$$(sel).forEach(b=>b.onclick=()=>{$$(sel).forEach(x=>x.classList.toggle('on',x===b));fn(b.dataset[attr]);});}
+function quiz(id,ans,fn){$$(`#${id} button`).forEach(b=>b.onclick=()=>{const ok=b.dataset.a===ans;$$(`#${id} button`).forEach(x=>x.className=x.dataset.a===ans?'right':x===b?'wrong':'');vib(ok?[30,40,60]:80);$(`#${id}Msg`).innerHTML=fn(ok);});}
+function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){let u=0;while(u===0)u=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*r());}
+const CA='#7cc4ff',CB='#ff9b5c',GO='#ffd166';
+const mean=a=>a.reduce((s,v)=>s+v,0)/a.length;
+/* 공용 선 그래프 */
+function lineChart(c,x0,y0,w,h,series,opt){opt=opt||{};const all=series.flatMap(s=>s.d.filter(v=>v!=null));let lo=opt.lo??Math.min(...all),hi=opt.hi??Math.max(...all);if(hi-lo<1e-9){hi+=1;lo-=1;}const pad=(hi-lo)*.08;lo-=pad;hi+=pad;
+  const n=Math.max(...series.map(s=>s.d.length));const sx=i=>x0+i/(n-1)*w,sy=v=>y0+h-(v-lo)/(hi-lo)*h;
+  if(opt.zero&&lo<0&&hi>0){c.strokeStyle='#55667f';c.setLineDash([3,3]);c.beginPath();c.moveTo(x0,sy(0));c.lineTo(x0+w,sy(0));c.stroke();c.setLineDash([]);}
+  if(opt.band){c.fillStyle='#ff7d7d18';c.fillRect(x0,sy(opt.band),w,sy(-opt.band)-sy(opt.band));c.strokeStyle='#ff7d7d88';c.setLineDash([4,3]);[opt.band,-opt.band].forEach(b=>{c.beginPath();c.moveTo(x0,sy(b));c.lineTo(x0+w,sy(b));c.stroke();});c.setLineDash([]);}
+  series.forEach(s=>{c.strokeStyle=s.col;c.lineWidth=s.lw||1.8;c.beginPath();let st=false;s.d.forEach((v,i)=>{if(v==null){st=false;return;}const X=sx(i),Y=sy(v);st?c.lineTo(X,Y):c.moveTo(X,Y);st=true;});c.stroke();
+    if(s.dots)s.d.forEach((v,i)=>{if(v==null)return;c.beginPath();c.arc(sx(i),sy(v),s.dots,0,7);c.fillStyle=s.dotCol?s.dotCol(v,i):s.col;c.fill();});});
+  if(opt.label)T(c,opt.label,x0+4,y0+2,opt.lcol||'#a3b0c2',10,'left','top');return{sx,sy,lo,hi};}
+
+/* ===== ① 동전 ===== */
+const COIN0=[...D.coin].map(ch=>ch==='1'?1:-1);let coin=COIN0.slice(),opShown=false;
+const cum=s=>{let a=0;return s.map(v=>a+=v);};
+function tossNew(seed){const r=rng(seed);return Array.from({length:200},()=>r()<.5?1:-1);}
+function opDraw(){const{c,w,h}=prep($('#opCv'),.55);const y=cum(coin);
+  lineChart(c,30,14,w-44,h-36,[{d:y,col:opShown?'#a3b0c2':'#6fdc9a',lw:2.2}],{label:opShown?'동전 던지기 누적 합':'가격(?)'});
+  T(c,'0일',30,h-10,'#a3b0c2',9,'left');T(c,'200일',w-14,h-10,'#a3b0c2',9,'right');
+  const H=coin.filter(v=>v>0).length;$('#opH').textContent=opShown?H+'번':'?';$('#opT').textContent=opShown?(200-H)+'번':'?';$('#opE').textContent=`${y[199]} · ${Math.min(...y)} · ${Math.max(...y)}`;}
+$('#opReveal').onclick=()=>{opShown=true;opDraw();vib([30,40,60]);const H=coin.filter(v=>v>0).length;
+  $('#opMsg').innerHTML=`<div class="res r">이 그래프는 <b>동전 던지기</b>입니다. 앞면이면 +1, 뒷면이면 −1을 200번. 앞면 ${H}번, 뒷면 ${200-H}번 나왔을 뿐 <b>오르는 힘 같은 건 없습니다</b>.${coin===COIN0||coin.join()===COIN0.join()?' (원고: numpy default_rng(28), 300개 시드 중 상승이 뚜렷한 것을 고른 것 — 전형적이라는 뜻은 아님)':''}</div>`;};
+let seedN=100;$('#opRe').onclick=()=>{coin=tossNew(seedN++*7919);opShown=true;opDraw();$('#opReveal').click();};
+$('#opOrig').onclick=()=>{coin=COIN0.slice();opDraw();};
+function glDraw(){const{c,w,h}=prep($('#glCv'),.62);const cols=3,rows=4,pw=w/cols,ph=h/rows;let up=0,down=0;
+  for(let k=0;k<12;k++){const s=tossNew(seedN++*104729),y=cum(s);const end=y[199];if(end>=15)up++;if(end<=-15)down++;const x0=(k%cols)*pw+6,y0=Math.floor(k/cols)*ph+6;c.fillStyle='#161d27';c.fillRect(x0-2,y0-2,pw-8,ph-8);
+    lineChart(c,x0+2,y0+4,pw-16,ph-20,[{d:y,col:end>=15?'#6fdc9a':end<=-15?'#ff7d7d':'#7cc4ff',lw:1.5}],{zero:true});T(c,(end>0?'+':'')+end,x0+pw-14,y0+ph-14,'#a3b0c2',10,'right');}
+  T(c,'',0,0,'#000',1);glDraw.msg=`초록 = 끝값 +15 이상(오르는 것처럼) ${up}개, 빨강 = −15 이하(내리는 것처럼) ${down}개.`;if(glDraw.loud)toast(glDraw.msg);glDraw.loud=true;}
+$('#glGo').onclick=glDraw;
+
+/* ===== ① 분해 조립 ===== */
+let bdM='add';
+function bdDraw(){const tr=+$('#bdT').value,sa=+$('#bdS').value,P=+$('#bdP').value,nz=+$('#bdN').value;['bdT','bdS','bdP','bdN'].forEach(id=>$('#'+id+'v').textContent=$('#'+id).value);
+  const n=84,r=rng(42);const T1=[],S1=[],R1=[],Y=[];for(let t=0;t<n;t++){const tv=100+tr*t,sv=Math.sin(2*Math.PI*t/P),rv=gauss(r)*nz;T1.push(tv);S1.push(bdM==='add'?sa*sv:1+sa/100*sv);R1.push(rv);Y.push(bdM==='add'?tv+sa*sv+rv:tv*(1+sa/100*sv)+rv);}
+  const{c,w,h}=prep($('#bdCv'),.9);const ph=h/4;
+  lineChart(c,8,4,w-16,ph-10,[{d:Y,col:'#eff3f8'}],{label:'관측값 = '+(bdM==='add'?'추세 + 계절 + 잔차':'추세 × 계절 + 잔차')});
+  lineChart(c,8,ph+4,w-16,ph-10,[{d:T1,col:CA}],{label:'추세',lcol:CA});
+  lineChart(c,8,2*ph+4,w-16,ph-10,[{d:bdM==='add'?S1:S1.map(v=>(v-1)*100),col:CB}],{label:bdM==='add'?'계절 (주기 '+P+'일)':'계절 비율 (%)',lcol:CB,zero:true});
+  lineChart(c,8,3*ph+4,w-16,ph-10,[{d:R1,col:'#b79cff'}],{label:'잔차 (잡음)',lcol:'#b79cff',zero:true});
+  $('#bdMsg').innerHTML=bdM==='add'?`<div class="res g"><b>덧셈 모형</b>: 회사가 커져도 계절 변동 <b>폭이 일정</b>. 맨 위 관측값의 출렁임 크기가 처음과 끝이 같습니다. 주기가 7이면 요일, 24면 하루 시간대 — 정해진 간격으로 되풀이되면 모두 계절성.</div>`
+    :`<div class="res y"><b>곱셈 모형</b>: 추세에 계절 <b>비율</b>을 곱해, 회사가 커지면 성수기 폭도 커집니다. 로그를 씌우면 곱셈이 덧셈으로 바뀌어 덧셈 모형처럼 다룰 수 있습니다.</div>`;}
+single('[data-md]','md',v=>{bdM=v;bdDraw();});['bdT','bdS','bdP','bdN'].forEach(id=>$('#'+id).oninput=bdDraw);
+
+/* ===== ② 이동 평균 ===== */
+const DOW=['월','화','수','목','금','토','일'];const dayLab=i=>{const d=new Date(2026,2,2+i);return `${d.getMonth()+1}/${d.getDate()}(${DOW[(i)%7]})`;};
+function maCalc(a,k){return a.map((_,i)=>i<k-1?null:mean(a.slice(i-k+1,i+1)));}
+function maDraw(){const k=+$('#maW').value;$('#maWv').textContent=k;const ma=maCalc(D.y,k);const{c,w,h}=prep($('#maCv'),.55);
+  lineChart(c,30,14,w-40,h-34,[{d:D.y,col:'#55667f',lw:1.2,dots:2.2,dotCol:(v,i)=>i%7>=5?CB:'#7cc4ff'},{d:ma,col:GO,lw:2.6}],{label:`● 방문자 (주황 = 주말)   ━ ${k}일 이동 평균`});
+  T(c,'3/2',30,h-8,'#a3b0c2',9,'left');T(c,'4/26',w-10,h-8,'#a3b0c2',9,'right');
+  $('#maMsg').innerHTML=k===7?`<div class="res g">창 길이 <b>7</b> = 요일 주기. 한 창에 월~일이 꼭 하나씩 들어가 <b>요일 효과가 상쇄</b>되고 추세만 남습니다. 창의 길이를 주기에 맞추는 게 요령!</div>`
+    :k===14?`<div class="res g">14 = 7의 두 배라 역시 요일 효과가 상쇄됩니다. 더 매끄럽지만 반응은 더 늦습니다.</div>`
+    :k>=15?`<div class="res y">창이 길수록 매끄럽지만 <b>반응이 늦어집니다</b>. 4/9(목)의 급락도 평균에 묻혀 거의 안 보입니다 — 매끄러움과 민첩함은 맞바꾸는 관계.</div>`
+    :`<div class="res y">창 ${k}: 주기(7)와 맞지 않아 요일 출렁임이 ${k===1?'그대로':'아직'} 남습니다. 7로 맞춰 보세요.</div>`;}
+$('#maW').oninput=maDraw;
+quiz('qz1','24',ok=>`<div class="res ${ok?'g':'r'}">${ok?'정답!':'정답은 <b>24</b>입니다.'} 마지막 달을 포함한 최근 세 달 18 + 30 + 24 = 72, ÷ 3 = <b>24</b>. 첫 달 12는 창 밖으로 나갔습니다. 창이 한 칸 옮겨 갈 때마다 가장 오래된 값이 빠지고 새 값이 들어옵니다 — 그래서 <b>이동</b> 평균.</div>`);
+
+/* ===== ② 지수 평활 ===== */
+const ESD=(()=>{const r=rng(5),a=[];for(let i=0;i<40;i++)a.push((i<10?100:130)+gauss(r)*6+(i===22?25:0));return a;})();
+function esDraw(){const al=+$('#esA').value;$('#esAv').textContent=al;const s=[ESD[0]];for(let i=1;i<ESD.length;i++)s.push(al*ESD[i]+(1-al)*s[i-1]);const ma=maCalc(ESD,5);
+  let{c,w,h}=prep($('#esCv'),.52);lineChart(c,30,14,w-40,h-30,[{d:ESD,col:'#55667f',lw:1.2,dots:2},{d:ma,col:'#b79cff',lw:1.6},{d:s,col:GO,lw:2.6}],{label:`● 매출   ━ 지수 평활 α=${al}   ━ 5일 이동 평균(보라)`});
+  /* 무게 막대 */const g=prep($('#ewCv'),.32);const K=10,bw=(g.w-40)/K;for(let k=0;k<K;k++){const wt=al*Math.pow(1-al,k);g.c.fillStyle=k===0?GO:'#ffd16699';g.c.fillRect(30+k*bw+bw*.15,g.h-20-wt*(g.h-34),bw*.7,wt*(g.h-34));T(g.c,k===0?'오늘':k+'일 전',30+k*bw+bw/2,g.h-8,'#a3b0c2',9);if(k<3)T(g.c,wt.toFixed(3),30+k*bw+bw/2,g.h-26-wt*(g.h-34),'#eff3f8',9);}
+  T(g.c,'각 날짜 값이 받는 무게',8,10,'#a3b0c2',10,'left');
+  $('#esMsg').innerHTML=`<div class="res ${al>=.7?'y':'g'}">무게는 ${al}, ${(al*(1-al)).toFixed(3)}, ${(al*(1-al)**2).toFixed(3)} … 로 줄어듭니다. ${al>=.7?'α가 크면 오늘 값을 많이 믿어 <b>최근 변화에 민감</b>하지만, 23일째 하루 튄 값에도 크게 흔들립니다.':al<=.15?'α가 작으면 <b>아주 매끄럽지만</b>, 10일째의 진짜 변화를 따라잡는 데 오래 걸립니다.':'α는 얼마나 빨리 믿을지를 정하는 손잡이입니다.'}${Math.abs(al-.5)<1e-9?' (α 0.5: 0.5, 0.25, 0.125 — 절반씩)':''}${Math.abs(al-.1)<1e-9?' (α 0.1: 0.1, 0.09, 0.081 — 천천히)':''}</div>`;}
+$('#esA').oninput=esDraw;
+quiz('qz2','106',ok=>`<div class="res ${ok?'g':'r'}">${ok?'정답!':'정답은 <b>106</b>입니다.'} 120 × 0.3 = 36, 100 × 0.7 = 70, 더하면 <b>106</b>. 20이 늘었는데 평활값은 6만 움직입니다. 하루 튄 값에 휘둘리지 않는 대신, 진짜 변화라면 며칠에 걸쳐 따라갑니다.</div>`);
+
+/* ===== ③ 랜덤 워크 ===== */
+let rwM='lvl',rwCoin=COIN0.slice(),rwOrig=true;
+function dfStat(y){/* Δy_t = a + b y_{t-1} + e,  t-stat of b */const n=y.length-1;const X=[],Yd=[];for(let t=1;t<y.length;t++){X.push(y[t-1]);Yd.push(y[t]-y[t-1]);}
+  const mx=mean(X),my=mean(Yd);let sxx=0,sxy=0;for(let i=0;i<n;i++){sxx+=(X[i]-mx)**2;sxy+=(X[i]-mx)*(Yd[i]-my);}const b=sxy/sxx,a=my-b*mx;let sse=0;for(let i=0;i<n;i++)sse+=(Yd[i]-a-b*X[i])**2;const se=Math.sqrt(sse/(n-2)/sxx);return b/se;}
+function rwDraw(){const y=cum(rwCoin),d=rwCoin;const s=rwM==='lvl'?y:d;const{c,w,h}=prep($('#rwCv'),.52);
+  if(rwM==='lvl'){const m1=mean(y.slice(0,100)),m2=mean(y.slice(100));const g=lineChart(c,30,14,w-40,h-30,[{d:y,col:'#6fdc9a',lw:2}],{label:'누적 (오늘 값)'});c.strokeStyle=GO;c.setLineDash([5,3]);[[0,100,m1],[100,199,m2]].forEach(([a,b,m])=>{c.beginPath();c.moveTo(g.sx(a),g.sy(m));c.lineTo(g.sx(b),g.sy(m));c.stroke();});c.setLineDash([]);$('#rwM1').textContent=m1.toFixed(1);$('#rwM2').textContent=m2.toFixed(1);}
+  else{const g=lineChart(c,30,14,w-40,h-30,[{d:d,col:CA,lw:1,dots:2,dotCol:v=>v>0?'#6fdc9a':'#ff7d7d'}],{label:'오늘 − 어제 (+1 또는 −1)',lo:-1.5,hi:1.5,zero:true});$('#rwM1').textContent=mean(d.slice(0,100)).toFixed(2);$('#rwM2').textContent=mean(d.slice(100)).toFixed(2);}
+  $('#rwP').textContent=rwOrig?(rwM==='lvl'?'0.897':'2.0×10⁻²⁹'):'-';$('#rwP').style.color=rwOrig?(rwM==='lvl'?'#ff7d7d':'#6fdc9a'):'';
+  const dfL=dfStat(y),dfD=dfStat(cum(d).map((_,i)=>d[i]));
+  $('#rwDf').innerHTML=`<span class="p">간이 DF 통계량 (Δy = a + b·y₋₁, b의 t값) · 5% 경계 약 −2.88</span>\n누적: <span class="${dfL<-2.88?'o':'e'}">${dfL.toFixed(2)}</span> ${dfL<-2.88?'→ 정상':'→ 정상 아님(단위근)'}    하루 차이: <span class="${dfD<-2.88?'o':'e'}">${dfD.toFixed(2)}</span> ${dfD<-2.88?'→ 정상':'→ 정상 아님'}`;
+  $('#rwMsg').innerHTML=rwM==='lvl'?`<div class="res r">한번 위로 올라가면 <b>거기서 다시 출발</b>하니, 우연히 앞면이 조금 많았던 흔적이 사라지지 않고 쌓입니다(앞 100일 평균과 뒤 100일 평균이 다름). 평균이 제자리로 돌아오지 않는, <b>정상이 아닌</b> 시계열 — <b>랜덤 워크</b>.${rwOrig?' ADF p 0.897 → 정상 아님.':''}</div>`
+    :`<div class="res g">오늘 값에서 어제 값을 빼면 남는 것은 <b>+1, −1, 그냥 동전 던지기</b>. 평균이 0 근처에서 그대로입니다 — 정상.${rwOrig?' ADF p ≈ 0.':''} 그 안에는 <b>오를 힘도, 기억도 없습니다</b>. 그럴듯한 추세가 보인다고 미래까지 이어진다는 보장은 없습니다.</div>`;}
+single('[data-dv]','dv',v=>{rwM=v;rwDraw();});
+$('#rwRe').onclick=()=>{rwCoin=tossNew(seedN++*31337);rwOrig=false;rwDraw();vib(20);};$('#rwOrig').onclick=()=>{rwCoin=COIN0.slice();rwOrig=true;rwDraw();};
+
+/* ===== ③ 손질 ===== */
+const TFD=(()=>{const r=rng(9),a=[];for(let t=0;t<72;t++){const tr=100*Math.exp(.025*t),se=1+.25*Math.sin(2*Math.PI*t/12);a.push(tr*se*Math.exp(gauss(r)*.04));}return a;})();let tfM='raw';
+function tfDraw(){let s,lab,msg,cls;const L=TFD.map(Math.log);const diff=a=>a.map((v,i)=>i?v-a[i-1]:null);
+  if(tfM==='raw'){s=TFD;lab='월별 매출 (원래 값)';cls='r';msg='평균이 계속 오르고(추세), 12개월 출렁임(계절)의 <b>폭도 점점 커집니다</b>. 정상이 아닙니다.';}
+  else if(tfM==='log'){s=L;lab='log(매출)';cls='y';msg='<b>로그</b>: 큰 값은 많이, 작은 값은 조금 줄여 출렁임의 <b>폭이 고르게</b> 됐습니다. 하지만 추세는 아직 남아 있습니다.';}
+  else if(tfM==='diff'){s=diff(TFD);lab='매출.diff()';cls='y';msg='<b>차분</b>: 오르내리던 수준은 사라지고 변화량만 남았지만, 폭이 커지는 문제는 그대로입니다.';}
+  else if(tfM==='logdiff'){s=diff(L);lab='log(매출).diff()';cls='g';msg='<b>로그 → 차분</b>: 폭도 고르고 평균도 일정해졌습니다(성장률에 해당). 남은 12개월 출렁임은 계절 차분으로!';}
+  else{s=L.map((v,i)=>i>=12?v-L[i-12]:null);lab='log(매출).diff(12)  — 작년 같은 달과 비교';cls='g';msg='<b>계절 차분</b>: 열두 달 전 값을 빼 작년 같은 달과 비교하니 계절 출렁임도 사라지고 평평해졌습니다.';}
+  const{c,w,h}=prep($('#tfCv'),.5);lineChart(c,30,14,w-40,h-30,[{d:s,col:tfM==='raw'?CB:tfM==='log'||tfM==='diff'?GO:'#6fdc9a',lw:2}],{label:lab,zero:tfM!=='raw'&&tfM!=='log'});
+  $('#tfMsg').innerHTML=`<div class="res ${cls}">${msg}</div>`;}
+single('[data-tf]','tf',v=>{tfM=v;tfDraw();});
+
+/* ===== ④ 자기상관 ===== */
+function acDraw(){const{c,w,h}=prep($('#acCv'),.48);const L=30,R=w-10,Tp=18,B=h-26,n=D.acf.length-1,bw=(R-L)/n;const sy=v=>B-(v+.2)/1.2*(B-Tp);
+  c.strokeStyle='#33425a';c.beginPath();c.moveTo(L,sy(0));c.lineTo(R,sy(0));c.stroke();const ci=1.96/Math.sqrt(56);c.fillStyle='#7cc4ff18';c.fillRect(L,sy(ci),R-L,sy(-ci)-sy(ci));
+  for(let k=1;k<=n;k++){const v=D.acf[k],x=L+(k-.5)*bw;c.fillStyle=k%7===0?GO:k===1?CB:CA;c.fillRect(x-bw*.3,Math.min(sy(v),sy(0)),bw*.6,Math.abs(sy(v)-sy(0)));T(c,String(k),x,B+12,k%7===0?GO:'#a3b0c2',10);if(k===1||k===7||k===14)T(c,v.toFixed(2),x,sy(v)-9,'#eff3f8',10,'center','middle','700');}
+  T(c,'시차(일) →  막대 = 그만큼 전 값과의 상관',L,8,'#a3b0c2',10,'left');
+  $('#acMsg').innerHTML=`<div class="res g">하루 전과의 자기상관 <b>${D.acf[1].toFixed(2)}</b>보다 7일 전과의 자기상관 <b>${D.acf[7].toFixed(2)}</b>이 더 높습니다 — 어제보다 <b>지난주 같은 요일</b>을 더 닮았다는 뜻. 높이 솟는 간격(7, 14)이 바로 계절의 주기라서 분해할 때 period=7을 줍니다.</div>`;}
+
+/* ===== ④ 분해·잔차 ===== */
+let dpM='all',dpSel=38;
+function dpDraw(){const k=+$('#dpK').value;$('#dpKv').textContent=k;const sd=D.sd,thr=k*sd;const out=D.resid.map((v,i)=>v!=null&&Math.abs(v)>thr?i:-1).filter(i=>i>=0);
+  const{c,w,h}=prep($('#dpCv'),dpM==='all'?1:.55);const geo=[];
+  if(dpM==='all'){const ph=h/4;
+    geo.push(lineChart(c,30,4,w-40,ph-10,[{d:D.y,col:'#eff3f8',dots:2,dotCol:(v,i)=>out.includes(i)?'#ff7d7d':'#eff3f8'}],{label:'관측값'}));
+    lineChart(c,30,ph+4,w-40,ph-10,[{d:D.trend,col:CA,lw:2}],{label:'추세 (7일 중심 이동 평균 — 앞뒤 3일은 없음)',lcol:CA});
+    lineChart(c,30,2*ph+4,w-40,ph-10,[{d:D.seas,col:CB}],{label:'계절 (요일 효과)',lcol:CB,zero:true});
+    geo.push(lineChart(c,30,3*ph+4,w-40,ph-10,[{d:D.resid,col:'#b79cff',dots:2.5,dotCol:(v,i)=>out.includes(i)?'#ff7d7d':'#b79cff'}],{label:`잔차 · ±${k}σ 경계`,lcol:'#b79cff',band:thr,zero:true}));}
+  else geo.push(lineChart(c,30,14,w-40,h-34,[{d:D.resid,col:'#b79cff',dots:3.5,dotCol:(v,i)=>out.includes(i)?'#ff7d7d':'#b79cff'}],{label:`잔차 · 표준편차 ${sd.toFixed(2)} · 경계 ±${thr.toFixed(1)}`,band:thr,zero:true}));
+  const g=geo[geo.length-1];if(dpSel!=null&&D.resid[dpSel]!=null){c.strokeStyle=GO;c.lineWidth=2;c.beginPath();c.arc(g.sx(dpSel),g.sy(D.resid[dpSel]),7,0,7);c.stroke();}
+  dpDraw.g=g;
+  const r=D.resid[dpSel];$('#dpOut').innerHTML=`<span class="p">${dayLab(dpSel)}</span>  관측 ${D.y[dpSel].toFixed(1)} = 추세 ${D.trend[dpSel]==null?'—':D.trend[dpSel].toFixed(1)} + 계절 ${D.seas[dpSel].toFixed(1)} + 잔차 <span class="${r!=null&&Math.abs(r)>thr?'e':'o'}">${r==null?'—':r.toFixed(1)}</span>\n<span class="p">경계 밖: </span>${out.length?out.map(i=>`<span class="e">${dayLab(i)} ${D.resid[i].toFixed(1)}</span>`).join(', '):'없음'}`;
+  $('#dpMsg').innerHTML=`<div class="res ${k===3?'r':'y'}">잔차의 표준편차 약 <b>${sd.toFixed(2)}</b>, ${k}배인 <b>${thr.toFixed(1)}</b>을 경계로 잡으면 ${out.length}개가 넘습니다.${k===3?' <b>4/9(목)</b> 하루의 잔차 −35.5 — 서버가 멈췄거나 행사가 있었을 수도. 잔차는 이유는 몰라도 <b>어디를 봐야 할지</b> 알려 줍니다.':k<3?' 경계를 낮추면 평범한 날도 걸립니다.':''} 단, 아주 큰 이상치는 표준편차 자체를 키워 다른 이상치를 가릴 수 있습니다.</div>`;}
+single('[data-dp]','dp',v=>{dpM=v;dpDraw();});$('#dpK').oninput=dpDraw;
+$('#dpCv').addEventListener('click',e=>{const r=$('#dpCv').getBoundingClientRect(),x=e.clientX-r.left;const g=dpDraw.g;let best=0,bd=1e9;for(let i=0;i<56;i++){const d=Math.abs(g.sx(i)-x);if(d<bd){bd=d;best=i;}}dpSel=best;dpDraw();vib(10);});
+
+/* 나의 예 */
+const MK='cointrend.mine';let mine=[];try{mine=JSON.parse(localStorage.getItem(MK)||'[]');if(!Array.isArray(mine))mine=[];}catch(e){mine=[];}
+const saveM=()=>{try{localStorage.setItem(MK,JSON.stringify(mine));}catch(e){}};
+function drawMine(){$('#mine').innerHTML=mine.length?mine.map((m,i)=>`<div><span>🪙 ${esc(m)}</span><button data-d="${i}" aria-label="지우기">✕</button></div>`).join(''):'<p class="note">한 번의 뺄셈이 우연과 추세를 가르는 첫걸음입니다.</p>';
+  $$('#mine button').forEach(b=>b.onclick=()=>{mine.splice(+b.dataset.d,1);saveM();drawMine();});}
+$('#myAdd').onclick=()=>{const v=$('#myIn').value.trim();if(!v)return;mine.unshift(v);mine=mine.slice(0,30);saveM();$('#myIn').value='';drawMine();toast('의심할 그래프 기록!');};
+$('#myIn').addEventListener('keydown',e=>{if(e.key==='Enter')$('#myAdd').click();});
+
+/* 탭 */
+let glDone=false;
+function redraw(){if(!$('#tab-t1').hidden){opDraw();if(!glDone){glDraw();glDone=true;}bdDraw();}if(!$('#tab-t2').hidden){maDraw();esDraw();}if(!$('#tab-t3').hidden){rwDraw();tfDraw();}if(!$('#tab-t4').hidden){acDraw();dpDraw();}}
+function show(t){$$('.tabs button').forEach(x=>x.classList.toggle('on',x.dataset.tab===t));['t1','t2','t3','t4'].forEach(k=>$('#tab-'+k).hidden=k!==t);redraw();window.scrollTo(0,0);}
+$$('.tabs button').forEach(b=>b.onclick=()=>show(b.dataset.tab));
+let rz;window.addEventListener('resize',()=>{clearTimeout(rz);rz=setTimeout(redraw,120);});
+drawMine();redraw();
+})();
+</script>
+</body>
+</html>
